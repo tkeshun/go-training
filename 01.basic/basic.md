@@ -742,10 +742,192 @@ func main() {
 
 ## if文
 
+言語仕様は[ここ](https://go.dev/ref/spec#If_statements).
+条件判定に使われる。  
+書き方は以下の通り。  
+
+- if
+
+    ```
+    if 条件 {
+        // 条件がtrueの場合の処理
+    }
+    ```
+
+    ```
+    package main
+
+    import "fmt"
+
+    func main() {
+        x := 10
+        if x > 5 {
+            fmt.Println("xは5より大きい")
+        }
+    }
+    ```
+
+- if else
+
+    ```
+    if 条件 {
+        // 条件がtrueの場合の処理
+    } else {
+        // 条件がfalseの場合の処理
+    }
+    ```
+
+    ```
+    x := 3
+    if x > 5 {
+        fmt.Println("xは5より大きい")
+    } else {
+        fmt.Println("xは5以下")
+    }
+    ```
+
+- if else if
+
+    ```
+    if 条件1 {
+    // 条件1がtrueの場合の処理
+    } else if 条件2 {
+        // 条件2がtrueの場合の処理
+    } else {
+        // どちらの条件もfalseの場合の処理
+    }
+    ```
+
+    ```
+    x := 7
+    if x > 10 {
+        fmt.Println("xは10より大きい")
+    } else if x > 5 {
+        fmt.Println("xは5より大きいが、10以下")
+    } else {
+        fmt.Println("xは5以下")
+    }
+    ```
+
+if文の中で変数宣言もできる。
+
+```
+if x := 5; x > 3 {
+    fmt.Println("xは3より大きい")
+} else {
+    fmt.Println("xは3以下")
+}
+// ここでxを参照しようとするとエラーになる
+```
+
+エラーハンドリングなんかでよく使う。  
+コードを簡潔にかけるメリット、err文を間違って上書きするミス、エラーハンドリングを忘れるミスを減らせる。  
+```
+if err := doFunc(); err != nil {
+    // エラー時の処理　
+}
+```
+
+## Switch
+
+言語仕様は[ここ](https://go.dev/ref/spec#Switch_statements)
+switch文は上から順に評価される
+
+- 基本的な構文
+
+```
+switch 式 {
+case 値1:
+    // 値1に一致する場合の処理
+case 値2:
+    // 値2に一致する場合の処理
+default:
+    // どのケースにも一致しない場合の処理
+}
+```
+
+-  条件判定付きのSwitch文
+
+```
+x := 7
+switch {
+case x > 10:
+    fmt.Println("xは10より大きい")
+case x > 5:
+    fmt.Println("xは5より大きいが、10以下")
+default:
+    fmt.Println("xは5以下")
+}
+
+```
+
+- 複数の値を使う
+
+```
+day := "土曜日"
+switch day {
+case "土曜日", "日曜日":
+    fmt.Println("週末です")
+default:
+    fmt.Println("平日です")
+}
+```
+
+- fallthrough
+
+switchは一致したケースを実行したら終了するが、`fallthrough`を指定すると、マッチした以降のケースを実行する。
+```
+switch x := 2; x {
+case 1:
+    fmt.Println("One")
+case 2:
+    fmt.Println("Two")
+    fallthrough
+case 3:
+    fmt.Println("Three")
+}
+
+```
+## breakとcontinue
+
+- break
+  ループを終了させる。
+  ```
+  package main
+    import "fmt"
+
+    func main() {
+        for i := 1; i <= 10; i++ {
+            if i == 5 {
+                fmt.Println("5でループ終了")
+                break
+            }
+            fmt.Println(i)
+        }
+    }
+  ```
+
+- continue
+  現在のループを中断して、次のループに行く
+  ```
+  package main
+
+    import "fmt"
+
+    func main() {
+        for i := 1; i <= 10; i++ {
+            if i%2 == 0 { // 偶数の場合はスキップ
+                continue
+            }
+            fmt.Println(i) // 奇数のみ出力
+        }
+    }
+  ```
 
 
 ## for文
 
+言語仕様は[ここ](https://go.dev/ref/spec#For_statements).
 Goの繰り返し構文はforのみ。
 
 for文の条件判定は３つのパターンがある。
@@ -807,10 +989,12 @@ func main() {
 	print(i)
 }
 ```
-この仕様でバグを作り込むことがあるので、ループ外とループ内で宣言する変数名は変えたほうがいい。
-多重ループ内のエラーハンドリングが特にミスりやすい（実際にやったことある）
+この仕様でバグを作り込むことがあるので、ループ外とループ内で宣言する変数名は変えたほうがいい。  
+多重ループ内のエラーハンドリングが特にミスりやすい（実際にやったことある）  
 
-３つ目の書き方はrangeを使う方法。
+３つ目の書き方はrangeを使う方法。  
+Pythonっぽい感じでかける。  
+以下サンプル。
 
 ```
 package main
@@ -826,13 +1010,95 @@ func main() {
 ```
 
 
-## breakとcontinue
+使える条件は[言語仕様](https://go.dev/ref/spec#For_range)にかいてある。  
+以下の通り。  
 
+- 配列、スライス、文字列、マップ
 
+```
+// 配列
+arr := [3]int{1, 2, 3}
+for i, v := range arr {
+    fmt.Printf("Index: %d, Value: %d\n", i, v)
+}
 
+```
 
-## Switch文
+```
+// スライス
+slice := []string{"Go", "Python", "Rust"}
+for i, v := range slice {
+    fmt.Printf("Index: %d, Value: %s\n", i, v)
+}
 
+```
+
+```
+// 文字列
+str := "Gopherkunn"
+for i, v := range str {
+    fmt.Printf("Index: %d, Rune: %c\n", i, v)
+}
+```
+
+```
+// map
+m := map[string]int{"Alice": 25, "Bob": 30}
+for k, v := range m {
+    fmt.Printf("Key: %s, Value: %d\n", k, v)
+}
+```
+
+- チャネルで受信した値
+
+```
+ch := make(chan int, 3)
+ch <- 10
+ch <- 20
+ch <- 30
+close(ch)
+
+for v := range ch {
+    fmt.Printf("Received: %d\n", v)
+}
+
+```
+
+- ゼロから上限値までの整数値(Go 1.22以降)
+
+```
+for i := range 5 { // 0から4まで
+    fmt.Printf("Value: %d\n", i)
+}
+```
+
+- イテレータ関数のyield関数に渡された値(Go1.23以降)
+
+ぶっちゃけ業務で使ったことない。
+理解するまでクソむずいので一旦放置でもOK
+
+```
+package main
+
+import (
+	"fmt"
+	"golang.org/x/exp/iter"
+)
+
+func main() {
+	// yield を使ってカスタムイテレータを作成
+	customIterator := iter.New(func(yield func(int)) {
+		for i := 0; i < 10; i += 2 { // 0から10未満、ステップ2
+			yield(i)
+		}
+	})
+
+	// イテレータを反復処理
+	for v := range customIterator {
+		fmt.Printf("Yielded: %d\n", v)
+	}
+}
+```
 
 ## エラーハンドリング
 
@@ -864,7 +1130,11 @@ DBアクセスを抽象化する汎用的なインターフェースを提供す
 
 ### select
 
+評価順はランダム
+
 ## ジェネリクス
+
+## イテレータ
 
 
 ## テスト
