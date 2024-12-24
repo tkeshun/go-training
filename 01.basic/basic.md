@@ -18,11 +18,6 @@ Googleがサポートするオープンソースのプログラミング言語
 
 ## 基本構文
 
-- 参考
-  - https://go.dev/doc/tutorial/getting-started
-  - 実用Go言語
-  - https://koko206.hatenablog.com/entry/2024/01/06/055112
-
 ### Hello World
 
 [Go Playground](https://go.dev/play/)を開き、右上のRunを押してみる。
@@ -235,6 +230,10 @@ Hello Go
     s := make([]int, 5, 10)
     ```
 
+Goでは変数名の先頭が小文字だとプライベートな値、大文字だとパブリックな値となる。
+プライベートの値はパッケージ外からアクセスできなくなる。
+
+
 #### 基本的なデータ型
 
 Webプログラミングで使いそうなものに絞って教える。
@@ -404,8 +403,6 @@ func main() {
     }
     ```
 
-### 構造体と型
-
 ### 関数宣言
 
 - `func`で関数宣言できる
@@ -456,7 +453,390 @@ func main() {
     }
     ```
 
+### 構造体と型
+
+### 型
+
+[言語仕様](https://go.dev/ref/spec#Types)では以下のように書かれている。
+> A type determines a set of values together with operations and methods specific to those values. A type may be denoted by a type name, if it has one, which must be followed by type arguments if the type is generic. A type may also be specified using a type literal, which composes a type from existing types.
+> (翻訳)　型は、特定の値の集合と、それらの値に特有の操作やメソッドを決定します。型には名前が付いている場合があり（型名）、その場合、型がジェネリックであれば型引数を伴う必要があります。また、型リテラルを使用して、既存の型を組み合わせて新しい型を指定することもできます。 
+
+型に名前をつけたり、複数の型を組み合わせて新しい型を作ることが可能
+
+型に名前をつける例を次に示す。
+```
+type MyInt int
+```
+
+このコードはMyIntという新しい型を定義している。この型はintをベースにメソッドを拡張することができる。
+このとき定義した型はint型とは別物扱いになる。
+以下のコードをPlaygraundに貼り付けて試してほしい。
+
+```
+package main
+
+import "fmt"
+
+// 型定義
+type MyInt int
+
+func main() {
+    var a int = 10
+    var b MyInt = 10
+
+    // 型を直接比較（エラーになります）
+    // fmt.Println(a == b) // コンパイルエラー: mismatched types int and MyInt
+
+    // 明示的に型変換すれば比較可能
+    fmt.Println(a == int(b)) // true
+
+    // 型の判定
+    fmt.Printf("Type of a: %T\n", a) // int
+    fmt.Printf("Type of b: %T\n", b) // main.MyInt
+}
+```
+
+int と MyInt は異なる型として扱われ、直接比較するとコンパイルエラーになる。
+明示的に型変換することで比較が可能になる。
+次節で複数の型をまとめた型について説明する。
+
+### 構造体
+
+構造体について、[言語仕様](https://go.dev/ref/spec#Types)では以下のように書かれている。
+
+> A struct is a sequence of named elements, called fields, each of which has a name and a type. Field names may be specified explicitly (IdentifierList) or implicitly (EmbeddedField). Within a struct, non-blank field names must be unique.
+> (翻訳)　構造体（struct）は、フィールドと呼ばれる名前付き要素の列で構成され、それぞれに名前と型があります。フィールド名は明示的に指定することも（IdentifierList）、暗黙的に指定することも（EmbeddedField）できます。同じ構造体内では、空白でないフィールド名は一意でなければなりません。
+
+#### 基本
+
+前節で触れた、複数の型をまとめた型が構造体である。
+Javaでいうクラスみたいなもの。
+以下のようにかく。
+
+```
+type StructName Struct {
+    FieldName1 int
+    Fieldname2 string
+}
+```
+
+実際には以下のように使う。
+
+```
+package main
+
+import "fmt"
+
+type Person struct {
+	Name     string
+	Age      int
+	gradYear int
+}
+
+func main() {
+	var p = Person{Name: "Alice", Age: 30, gradYear: 2023}
+	fmt.Println(p.Name)     // Alice
+	fmt.Println(p.Age)      // 30
+	fmt.Println(p.gradYear) // 2023
+}
+
+```
+
+宣言するときは、フィールドを指定して値を入れる。
+フィールドの先頭が小文字だとプライベートフィールドになる。
+プライベートフィールドの場合は、パッケージ外からはアクセスできない。
+
+※　割と実践的な例（実用Go言語より）
+
+Statusコードによって出力する内容を変えられる。
+
+```
+package main
+
+import "fmt"
+
+type HTTPStatus int
+
+const (
+	StatusOK              HTTPStatus = 200
+	StatusUnauthorized    HTTPStatus = 401
+	StatusPaymentRequired HTTPStatus = 402
+	StatusForbidden       HTTPStatus = 403
+)
+
+// String()メソッドが実装されてると、fmt.Print系で呼び出される
+func (s HTTPStatus) String() string {
+	switch s {
+	case StatusOK:
+		return "OK"
+	case StatusUnauthorized:
+		return "Unauthorized"
+	case StatusPaymentRequired:
+		return "Payment Required"
+	case StatusForbidden:
+		return "Forbidden"
+	default:
+		return fmt.Sprintf("HTTPStatus(%d)", s)
+	}
+}
+
+func main() {
+	fmt.Println(StatusOK) // 正しい
+	printHTTPStatus(200)  // int型の拡張なので通る
+	// printHTTPStatus("200") // stringだとコンパイルエラーになる
+}
+
+func printHTTPStatus(s HTTPStatus) {
+	fmt.Println(s)
+}
+```
+
+#### メソッドを生やす
+
+構造体には関数を紐付けることでメソッドの定義ができる。
+具体的には、レシーバー(pythonでいうself, javaでいうthis)を指定して関数を定義する。
+
+基本形
+```
+func (レシーバ名 レシーバ型) メソッド名(引数) 戻り値型 {
+    // メソッドの処理
+}
+```
+
+- レシーバ名: メソッドが属する構造体のインスタンスを表す変数名（慣例として1文字が多い）
+- レシーバ型: メソッドが関連付けられる構造体の型
+- 引数と戻り値: 通常の関数と同じように定義可能
+
+具体例を以下に示す。
+
+```
+package main
+
+import "fmt"
+
+// 構造体の定義
+type Person struct {
+    Name string
+    Age  int
+}
+
+// 値レシーバのメソッド
+func (p Person) Greet() string {
+    return "Hello, my name is " + p.Name
+}
+
+func main() {
+    p := Person{Name: "Alice", Age: 30}
+    fmt.Println(p.Greet()) // Hello, my name is Alice
+}
+```
+
+上記のうち、レシーバーは２つに分類できる。
+値レシーバとポインタレシーバだ。
+
+- 値レシーバ
+    構造体のコピーが渡される。
+    フィールドの変更が元の構造体に伝播しない。
+    ```
+    // 値レシーバのメソッド
+    func (p Person) Greet() string {
+        return "Hello, my name is " + p.Name
+    }
+    ```
+
+- ポインタレシーバ
+    構造体のポインタが渡される。
+    フィールドの変更が元の構造体に伝播する。
+    レシーバにアスタリスク(*)を前置するとポインタレシーバになる。
+    ```
+    // 値レシーバのメソッド
+    func (p *Person) Greet() string {
+        return "Hello, my name is " + p.Name
+    }
+    ```
+
+値レシーバとポインタレシーバの比較の例を下に示す。
+```
+package main
+
+import "fmt"
+
+// 構造体の定義
+type Person struct {
+    Name string
+    Age  int
+}
+
+// 値レシーバのメソッド（コピーが渡される）
+func (p Person) CompareAddressValue(other Person) bool {
+    return &p == &other
+}
+
+// ポインタレシーバのメソッド（元のアドレスが渡される）
+func (p *Person) CompareAddressPointer(other *Person) bool {
+    return p == other
+}
+
+func main() {
+    // 2つの構造体インスタンスを作成
+    p1 := Person{Name: "Alice", Age: 30}
+    p2 := Person{Name: "Alice", Age: 30}
+
+    // 値レシーバを使用
+    fmt.Println("Value Receiver Address Comparison:")
+    fmt.Printf("p1 == p2: %v\n", p1.CompareAddressValue(p2)) // false（異なるコピーのアドレス）
+
+    // ポインタレシーバを使用
+    fmt.Println("Pointer Receiver Address Comparison:")
+    fmt.Printf("p1 == &p2: %v\n", (&p1).CompareAddressPointer(&p2)) // false（異なるインスタンス）
+
+    // 同じアドレスを比較
+    fmt.Printf("p1 == &p1: %v\n", (&p1).CompareAddressPointer(&p1)) // true（同じインスタンス）
+}
+```
+
+Playgroundで実行してみてほしい。
+出力は以下のようになるはず。(手元では検証済み)
+
+```
+Value Receiver Address Comparison:
+p1 == p2: false
+Pointer Receiver Address Comparison:
+p1 == &p2: false
+p1 == &p1: true
+```
+
+値レシーバでは、アドレスが異なっているのが確認できる。
+
+- 値レシーバとポインタレシーバーのまとめ
+
+|項目|	値レシーバ	|ポインタレシーバ|
+|----|---|---|
+|**渡されるもの**|構造体のコピー|構造体のポインタ|
+|**元の値の変更**|できない|できる|
+|**用途**|値を変更しない操作に適する|値を変更する操作に適する
+
+※ポインタとは？（参考：実用Go言語P404ページ）
+変数の値を格納するメモリ上の場所（アドレス）を指す。
+アドレスを扱うのがポインタ。
+- 変数のポインタ型にはアスタリスク（*）を前置する。
+- 既存の変数のポインタを取り出すには＆を利用する
+- ポインタから参照先の値を取り出す（dereference：デリファレンス. リファレンスをたどって指しているデータにアクセスすること[参考](https://gihyo.jp/dev/serial/01/perl-hackers-hub/002001#:~:text=%E3%83%AA%E3%83%95%E3%82%A1%E3%83%AC%E3%83%B3%E3%82%B9%E3%82%92%E3%81%9F%E3%81%A9%E3%81%A3%E3%81%A6%E6%8C%87%E3%81%97,%EF%BC%88dereference%EF%BC%89%E3%81%A8%E8%A8%80%E3%81%84%E3%81%BE%E3%81%99%E3%80%82)）には*を利用する
+
+
+サンプルコード（実用Go言語記載コードをベースに拡張した）
+```
+package main
+
+import "fmt"
+
+func main() {
+	var i int = 10
+	var p *int
+	p = &i
+	fmt.Println(&i) // コピー元
+	fmt.Println(p)  // アドレス
+	fmt.Println(*p) // 格納された値
+}
+```
+
+## if文
+
+
+
+## for文
+
+Goの繰り返し構文はforのみ。
+
+for文の条件判定は３つのパターンがある。
+１つ目は条件判定がfalseになるまで、ループする構文。
+
+```
+for a < b {
+  print(a)
+}
+```
+
+無限ループもできる
+
+```
+a =: 0
+for {
+    a++
+    if(a > 10) {
+        break
+    }
+}
+```
+２つ目は値の増減と評価を含むfor文
+iのスコープはfor文内だけ、ループを抜けたら無効になる
+```
+for i := 0; i < 10; i++ {
+    print(i)
+}
+```
+
+次のようにfor文の外で宣言して、for文のスコープで新たに宣言すると別物扱い。
+```
+package main
+
+func main() {
+	i := 999999999
+	for i := 0; i < 10; i++ {
+		print(i)
+	}
+	print("\n")
+	print(i)
+}
+
+// 出力例
+// 0123456789
+// 999999999
+```
+
+ただし、スコープ内で宣言していないと、ループ外の変数が参照される。
+```
+package main
+
+func main() {
+	i := 999999999
+	for j := 0; j < 10; j++ {
+		print(i)
+	}
+	print("\n")
+	print(i)
+}
+```
+この仕様でバグを作り込むことがあるので、ループ外とループ内で宣言する変数名は変えたほうがいい。
+多重ループ内のエラーハンドリングが特にミスりやすい（実際にやったことある）
+
+３つ目の書き方はrangeを使う方法。
+
+```
+package main
+
+import "fmt"
+
+func main() {
+    nums := []int{1, 2, 3, 4, 5}
+    for index, value := range nums {
+        fmt.Printf("index: %d, value: %d\n", index, value)
+    }
+}
+```
+
+
+## breakとcontinue
+
+
+
+
+## Switch文
+
+
 ## エラーハンドリング
+
+
 
 ## インターフェース
 
@@ -472,10 +852,40 @@ func main() {
 DBアクセスを抽象化する汎用的なインターフェースを提供するライブラリ。
 実際にDBとアクセスを行う実装として、DBドライバーが必要。
 
+#### 補足：init関数
 ## net/http
-
-## テスト
-
 
 ## 並行処理
 
+### gorutine
+
+
+### channel
+
+### select
+
+## ジェネリクス
+
+
+## テスト
+
+### Unitテスト
+### 並行テスト
+### runnを使ったテスト
+
+## おまけ
+
+### go embed
+
+### Opentelemetry+clickhouse+Grafana
+
+#### Opentlemetry
+
+#### clickhouse
+
+#### Grafana
+
+## 参考文献
+  - https://go.dev/doc/tutorial/getting-started
+  - 実用Go言語
+  - https://koko206.hatenablog.com/entry/2024/01/06/055112
