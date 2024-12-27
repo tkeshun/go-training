@@ -740,6 +740,297 @@ func main() {
 }
 ```
 
+## インターフェース
+
+言語仕様は[ここ](https://go.dev/ref/spec#Interface_types)  
+実装と関数にアクセスするためのインターフェースを分離できる。  
+Goのinterfaceは暗黙的に満たされるため、明示して実装する必要がない。  
+インターフェースで定義されたメソッドを実装していれば、実装に使用される型に関わらずインターフェースを実装してることになる。
+
+### 基本のinterface
+
+使い方としては、interfaceにはメソッドの集まりを定義する。
+型側はメソッドシグネチャ（引数、返り値、関数名）が一致するように実装する。
+この際インターフェースにないメソッドが実装されていても問題ない。
+
+[A tour of go](https://go-tour-jp.appspot.com/methods/9)から引用したコードを一部改変。
+
+```
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+type Abser interface {
+	Abs() float64
+}
+
+func main() {
+	var a Abser
+	f := MyFloat(-math.Sqrt2)
+
+	a = f // a MyFloat implements Abser
+
+	fmt.Println(a.Abs())
+}
+
+type MyFloat float64
+
+func (f MyFloat) Abs() float64 {
+	if f < 0 {
+		return float64(-f)
+	}
+	return float64(f)
+}
+
+func (f MyFloat) NoUseMethod() {
+	return
+}
+```
+
+### 埋め込みinterface
+
+言語仕様書は[ここ](https://go.dev/ref/spec#Embedded_interfaces)
+interfaceは合成できる。
+interfaceを別のinterfaceのフィールドに指定すると、定義されたメソッドを取り込むことができる。
+
+```
+type Reader interface {
+	Read(p []byte) (n int, err error)
+	Close() error
+}
+
+type Writer interface {
+	Write(p []byte) (n int, err error)
+	Close() error
+}
+
+// ReadWriter's methods are Read, Write, and Close.
+type ReadWriter interface {
+	Reader  // includes methods of Reader in ReadWriter's method set
+	Writer  // includes methods of Writer in ReadWriter's method set
+}
+```
+
+
+合成されているのを確認する例を下に示す。
+このコードはメソッド情報を出力する。
+```
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+// 基本のインターフェースを定義
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
+
+type Writer interface {
+	Write(p []byte) (n int, err error)
+}
+
+type Closer interface {
+	Close() error
+}
+
+// 合成されたインターフェース
+type ReadWriterCloser interface {
+	Reader
+	Writer
+	Closer
+}
+
+// 合成インターフェースを実装した構造体
+type File struct{}
+
+func (f File) Read(p []byte) (n int, err error) {
+	return len(p), nil
+}
+
+func (f File) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}
+
+func (f File) Close() error {
+	return nil
+}
+
+// インターフェースのメソッド一覧を取得
+func listMethods(iface interface{}) {
+	t := reflect.TypeOf(iface)
+	if t.Kind() != reflect.Interface {
+		fmt.Println("Provided type is not an interface.")
+		return
+	}
+	fmt.Printf("Methods of %s:\n", t.Name())
+	for i := 0; i < t.NumMethod(); i++ {
+		method := t.Method(i)
+		fmt.Printf("- %s\n", method.Name)
+	}
+}
+
+func main() {
+	// インターフェースのメソッド一覧を表示
+	fmt.Println("Reader methods:")
+	listMethods((*Reader)(nil))
+
+	fmt.Println("\nWriter methods:")
+	listMethods((*Writer)(nil))
+
+	fmt.Println("\nCloser methods:")
+	listMethods((*Closer)(nil))
+
+	fmt.Println("\nReadWriterCloser methods:")
+	listMethods((*ReadWriterCloser)(nil))
+}
+```
+
+出力例
+```
+Interface: Reader
+Methods:
+- Read([]uint8) int, error
+Interface: Writer
+Methods:
+- Write([]uint8) int, error
+Interface: ReadWriter
+Methods:
+- Read([]uint8) int, error
+- Write([]uint8) int, error
+```
+
+ReadWriterにはReadのメソッドとWriterのメソッドが設定されているのがわかる。
+これが埋め込み。
+
+※合成について
+Goでは型を組み合わせて型を作ること。
+オブジェクト指向系言語にはあるはず。
+Goは継承はサポートしておらず、合成はサポートしてる。
+参考：https://www.codecademy.com/resources/docs/go/composition
+
+
+
+### General interfaeces
+
+Go1.18以降はジェネリクスが入ったのでこのinterfaceが使える。
+interfaceにいれる型を制限できる。  
+いままでのinterfaceはメソッドを実装してる型を許容していた。
+ジェネリクスが入ったことで型の指定ができるようになった。
+
+#### 空のinterface
+
+空のinterfaceにはすべての型が代入可能
+
+```
+var x interface{}
+```
+
+#### メソッド仕様があるinterface
+
+従来と同様のinterface要求したメソッドを実装している型は型の種別に関わらず代入できる。
+
+```
+type Stringer interface {
+    String() string
+}
+```
+
+#### 型指定されたinterface
+
+- 単一型のinterface
+    基底型が指定した型の場合受け入れる
+
+    ```
+    type MyInterface interface {
+        ~int
+    }
+    ```
+
+    下記のようにintをベースにした型を受け入れる
+
+    ```
+    package main
+
+    import "fmt"
+
+    // 型制約のためのインターフェース
+    type MyIntInterface interface {
+        ~int
+    }
+
+    // 基底型がintのカスタム型
+    type MyInt int
+
+    // ジェネリクス関数を使用して型制約をテスト
+    func printNumber[T MyIntInterface](num T) {
+        fmt.Println(num)
+    }
+
+    func main() {
+        var num MyInt = 42 // MyInt型の値
+        printNumber(num)   // 型制約を満たしているため問題なく呼び出せる
+    }
+    ```
+
+- 型の和
+    型の集合を受け入れる。
+
+    ```
+    type Number interface {
+        int | float64
+    }
+    ```
+
+    ```
+    package main
+
+    import "fmt"
+
+    // 型制約を表すインターフェース
+    type Number interface {
+        ~int | ~float64
+    }
+
+    // 基底型がintまたはfloat64であるカスタム型
+    type MyInt int
+    type MyFloat float64
+
+    // ジェネリクス関数で型制約を利用
+    func add[T Number](a, b T) T {
+        return a + b
+    }
+
+    func main() {
+        var x MyInt = 10
+        var y MyInt = 20
+        var f MyFloat = 1.5
+        var g MyFloat = 2.5
+
+        // int型の計算
+        fmt.Println(add(x, y)) // 出力: 30
+
+        // float64型の計算
+        fmt.Println(add(f, g)) // 出力: 4.0
+    }
+
+    ```
+ 
+- メソッド定義と組み合わせた例
+
+    ```
+    type MyInterface interface {
+        int | float64
+        String() string
+    }
+
+    ```
+
+
 ## if文
 
 言語仕様は[ここ](https://go.dev/ref/spec#If_statements).
@@ -1100,11 +1391,18 @@ func main() {
 }
 ```
 
+
+
 ## エラーハンドリング
 
+Goではtry-catchがなく、エラーを返り値で返す
+errorはerror interfaceを満たす
 
+### 基本のエラーハンドリング
 
-## インターフェース
+### errorsパッケージ
+
+### panic 
 
 ## モジュールとパッケージ
 
@@ -1119,12 +1417,13 @@ DBアクセスを抽象化する汎用的なインターフェースを提供す
 実際にDBとアクセスを行う実装として、DBドライバーが必要。
 
 #### 補足：init関数
+
+
 ## net/http
 
 ## 並行処理
 
 ### gorutine
-
 
 ### channel
 
@@ -1147,13 +1446,6 @@ DBアクセスを抽象化する汎用的なインターフェースを提供す
 
 ### go embed
 
-### Opentelemetry+clickhouse+Grafana
-
-#### Opentlemetry
-
-#### clickhouse
-
-#### Grafana
 
 ## 参考文献
   - https://go.dev/doc/tutorial/getting-started
