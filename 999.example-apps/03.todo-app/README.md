@@ -33,11 +33,22 @@
 
 ## 解答例
 
+### 事前準備
+
+1. 各ディレクトリでgo.modを作る  
+    `go mod init todo`、`go mod init pkg`
+
+2. go.workを作る    
+    `go work init todo pkg`
+
+
 ### 1. pkg/logger.goでロガーを作る。
 
 #### 実装編
 package pkgでパッケージをきる。
 設定用の構造体を作る。
+Loggerを実装。
+
 
 #### Test編
 
@@ -47,10 +58,6 @@ testの雛形を作れるツールがあるので利用する。
 [Testify](https://github.com/stretchr/testify)を使ってUnitテストを書いていく。  
 `go get github.com/stretchr/testify`でインストール。  
 
-
-
-### 2. go workにtodoモジュールとpkgモジュールを追加する
-
-### 3. ディレクトリ構造を決定する
+### 2. todoアプリのディレクトリ構造を決定する
 
 今回、ui,usecase,domain,infraに分けた。

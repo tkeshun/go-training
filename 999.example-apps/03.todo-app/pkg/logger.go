@@ -24,9 +24,11 @@ type logger struct {
 	cache       sync.Map // キャッシュ
 }
 
+// グローバル変数はmain関数実行前に宣言される。
 var globalLogger *logger
-var once sync.Once
 
+// sync.Onceオブジェクトに対して渡した関数は、プログラム全体で一度しか実行されない
+var once sync.Once
 var defaultConfig = LoggerConfig{
 	Level: slog.LevelInfo,
 	CommonFields: map[string]any{
@@ -37,13 +39,16 @@ var defaultConfig = LoggerConfig{
 	ContextKeys: []contextKey{"request_id"},
 }
 
-func InitLogger(config *LoggerConfig) (*logger, error) {
+// ロガーを初期化する関数
+func InitLogger(config *LoggerConfig) *logger {
+	// もう一度onceが実行されるとエラーになる
 	once.Do(
 		func() {
+			// 初期設定が与えられていない場合、初期設定を使う。
 			if config == nil {
 				config = &defaultConfig
 			}
-
+			// ロガーを新規に作成
 			baseLogger := slog.New(
 				slog.NewJSONHandler(config.Output, &slog.HandlerOptions{
 					Level: config.Level,
@@ -53,19 +58,20 @@ func InitLogger(config *LoggerConfig) (*logger, error) {
 			for k, v := range config.CommonFields {
 				baseLogger = baseLogger.With(slog.Any(k, v))
 			}
-
+			// グローバル変数にあるlogger格納用変数にインスタンスを格納
 			globalLogger = &logger{
 				baseLogger:  baseLogger,
 				contextKeys: config.ContextKeys,
 			}
 		},
 	)
-	return globalLogger, nil
+	return globalLogger
 }
 
 func GetLogger() (*logger, error) {
+	// もし初期化されてなかったらエラー
 	if globalLogger == nil {
-		return nil, fmt.Errorf("error: no init logger. Please initialize Logger. Using InitLogger.")
+		return nil, fmt.Errorf("error: no init logger. Please initialize Logger. Using InitLogger")
 	}
 	return globalLogger, nil
 }
@@ -107,28 +113,28 @@ func (l *logger) extractFieldsFromContext(ctx context.Context) map[string]any {
 	return fields
 }
 
-// log は内部でログを処理します。
-func (l *logger) log(level slog.Level, msg string, fields map[string]any) {
+// ログを処理
+func (l *logger) log(ctx context.Context, level slog.Level, msg string, fields map[string]any) {
 	args := make([]any, 0, len(fields)*2)
 	for k, v := range fields {
 		args = append(args, k, v)
 	}
-	l.baseLogger.Log(level, msg, args...)
+	l.baseLogger.Log(ctx, level, msg, args...)
 }
 
 // ログ出力メソッド群
-func (l *logger) Info(msg string, fields map[string]any) {
-	l.log(slog.LevelInfo, msg, fields)
+func (l *logger) Info(ctx context.Context, msg string, fields map[string]any) {
+	l.log(ctx, slog.LevelInfo, msg, fields)
 }
 
-func (l *logger) Warn(msg string, fields map[string]any) {
-	l.log(slog.LevelWarn, msg, fields)
+func (l *logger) Warn(ctx context.Context, msg string, fields map[string]any) {
+	l.log(ctx, slog.LevelWarn, msg, fields)
 }
 
-func (l *logger) Error(msg string, fields map[string]any) {
-	l.log(slog.LevelError, msg, fields)
+func (l *logger) Error(ctx context.Context, msg string, fields map[string]any) {
+	l.log(ctx, slog.LevelError, msg, fields)
 }
 
-func (l *logger) Debug(msg string, fields map[string]any) {
-	l.log(slog.LevelDebug, msg, fields)
+func (l *logger) Debug(ctx context.Context, msg string, fields map[string]any) {
+	l.log(ctx, slog.LevelDebug, msg, fields)
 }

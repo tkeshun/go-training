@@ -4,58 +4,64 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"strconv"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+// グローバル変数をリセットするためのヘルパー
+var resetGlobals = func() {
+	once = sync.Once{}
+	globalLogger = nil
+}
+
 func TestInitLogger(t *testing.T) {
+	resetGlobals()
 	tests := []struct {
-		name    string
-		config  *LoggerConfig
-		wantErr bool
+		name   string
+		config *LoggerConfig
 	}{
 		{
-			name:    "Normal case - valid config",
-			config:  &LoggerConfig{Level: slog.LevelInfo, Output: os.Stdout, CommonFields: map[string]any{"service": "test"}},
-			wantErr: false,
+			name:   "Normal case - valid config",
+			config: &LoggerConfig{Level: slog.LevelInfo, Output: os.Stdout, CommonFields: map[string]any{"service": "test"}},
 		},
 		{
-			name:    "Boundary case - nil config",
-			config:  nil, // Expected to use defaultConfig
-			wantErr: false,
+			name:   "Boundary case - nil config",
+			config: nil, // Expected to use defaultConfig
 		},
 		{
-			name:    "Extreme case - invalid log level",
-			config:  &LoggerConfig{Level: slog.Level(-100)},
-			wantErr: false, // Invalid levels are ignored, treated as lowest priority
+			name:   "Extreme case - invalid log level",
+			config: &LoggerConfig{Level: slog.Level(-100)}, // Invalid levels are ignored, treated as lowest priority
 		},
-		// No abnormal case: InitLogger initializes logger with any given config
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger, err := InitLogger(tt.config)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, logger)
-			}
+			// グローバル状態をリセット
+			resetGlobals()
+
+			// 初回呼び出し
+			logger := InitLogger(tt.config)
+			assert.NotNil(t, logger, "Logger should not be nil after initialization")
+
+			// 二度目の呼び出しで再初期化されないことを確認
+			secondLogger := InitLogger(tt.config)
+			assert.NotNil(t, secondLogger, "Logger should still be available")
+			assert.Equal(t, logger, secondLogger, "Logger instance should be the same after multiple calls")
 		})
 	}
 }
 
 func TestGetLogger(t *testing.T) {
+	resetGlobals()
 	t.Run("Error case - logger not initialized", func(t *testing.T) {
 		_, err := GetLogger()
 		assert.Error(t, err)
 	})
-
+	resetGlobals()
 	t.Run("Normal case - logger initialized", func(t *testing.T) {
-		_, err := InitLogger(nil)
-		assert.NoError(t, err)
-
+		InitLogger(nil)
 		logger, err := GetLogger()
 		assert.NoError(t, err)
 		assert.NotNil(t, logger)
@@ -88,15 +94,24 @@ func Test_logger_WithContext(t *testing.T) {
 			ctx: func() context.Context {
 				ctx := context.Background()
 				for i := 0; i < 1000; i++ {
-					ctx = context.WithValue(ctx, contextKey("key"+string(i)), i)
+					ctx = context.WithValue(ctx, contextKey("key"+strconv.Itoa(i)), i)
 				}
 				return ctx
 			}(),
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := &logger{contextKeys: tt.fields.contextKeys}
+			baseLogger := slog.New(
+				slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+					Level: slog.LevelInfo,
+				}),
+			)
+			logger := &logger{
+				contextKeys: tt.fields.contextKeys,
+				baseLogger:  baseLogger,
+			}
 			cachedLogger := logger.WithContext(tt.ctx)
 			assert.NotNil(t, cachedLogger)
 		})
@@ -136,7 +151,7 @@ func Test_logger_log(t *testing.T) {
 	t.Run("Normal case - log info level", func(t *testing.T) {
 		logger := &logger{baseLogger: slog.New(slog.NewJSONHandler(os.Stdout, nil))}
 		assert.NotPanics(t, func() {
-			logger.log(slog.LevelInfo, "Test message", map[string]any{"key": "value"})
+			logger.log(context.TODO(), slog.LevelInfo, "Test message", map[string]any{"key": "value"})
 		})
 	})
 }
