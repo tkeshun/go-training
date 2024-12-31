@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"sync"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -17,14 +16,13 @@ func main() {
 	startTime := time.Now()
 
 	// Map to store responses
-	responses := make(map[int]string)
-	var mu sync.Mutex
+	// responses := make(map[int]string)
+	responses := make([]string, 20)
+	// var mu sync.Mutex
 
 	var g errgroup.Group
 
 	for i := 0; i < 20; i++ {
-		// Capture the current value of i to avoid goroutine issues
-		i := i
 		url := fmt.Sprintf("%s%d", baseURL, i)
 
 		g.Go(func() error {
@@ -42,9 +40,9 @@ func main() {
 			}
 
 			// Store the response in the map
-			mu.Lock()
+			// mu.Lock()
 			responses[i] = string(body)
-			mu.Unlock()
+			// mu.Unlock()
 			return nil
 		})
 	}
