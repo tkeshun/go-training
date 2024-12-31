@@ -7,14 +7,23 @@
 ## 制限 
 - go workを使うこと
 - slogを使ってロガーを作成すること
-- pkg/loggerは別パッケージ
-- apiに認証をかけること
+    - json形式で構造化ログを出力すること
+    - error発生時はErrorログ出力する
+    - infoやwarnも使ってみて
+
+- pkg/loggerは別パッケージにすること
+- apiにベアラートークンで認証をかけること
 - DBアクセスをすること
 
 
 ## 参考にするといい資料
 
 - slog
+
+    https://qiita.com/Imamotty/items/3fbe8ce6da4f1a653fae
+    https://pkg.go.dev/log/slog
+
+
 
 - go work
 
@@ -26,6 +35,11 @@
 
 ### 1. pkg/loggerパッケージを作る。
 
+package pkgでパッケージをきる。
+
+
 ### 2. go workにtodoモジュールとpkgモジュールを追加する
 
-### 3. 
+### 3. ディレクトリ構造を決定する
+
+今回、ui,usecase,domain,infraに分けた。
