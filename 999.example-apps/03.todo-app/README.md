@@ -33,9 +33,20 @@
 
 ## 解答例
 
-### 1. pkg/loggerパッケージを作る。
+### 1. pkg/logger.goでロガーを作る。
 
+#### 実装編
 package pkgでパッケージをきる。
+設定用の構造体を作る。
+
+#### Test編
+
+testの雛形を作れるツールがあるので利用する。  
+まだパッケージをインストールしていない場合は、`go install github.com/cweill/gotests/...@latest`でパッケージをインストールする(もしくはgo getする)。　　
+`gotests -w -all logger.go`テストコードを生成する(tools.goの場合：`go run github.com/cweill/gotests/gotests -w -all logger.go`)。  
+[Testify](https://github.com/stretchr/testify)を使ってUnitテストを書いていく。  
+`go get github.com/stretchr/testify`でインストール。  
+
 
 
 ### 2. go workにtodoモジュールとpkgモジュールを追加する
