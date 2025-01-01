@@ -1,4 +1,4 @@
-package pkg
+package logger
 
 import (
 	"context"
@@ -108,7 +108,7 @@ func Test_logger_WithContext(t *testing.T) {
 					Level: slog.LevelInfo,
 				}),
 			)
-			logger := &logger{
+			logger := &Logger{
 				contextKeys: tt.fields.contextKeys,
 				baseLogger:  baseLogger,
 			}
@@ -140,7 +140,7 @@ func Test_logger_extractFieldsFromContext(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := &logger{contextKeys: tt.contextKeys}
+			logger := &Logger{contextKeys: tt.contextKeys}
 			fields := logger.extractFieldsFromContext(tt.ctx)
 			assert.Equal(t, tt.expectedFields, fields)
 		})
@@ -149,7 +149,7 @@ func Test_logger_extractFieldsFromContext(t *testing.T) {
 
 func Test_logger_log(t *testing.T) {
 	t.Run("Normal case - log info level", func(t *testing.T) {
-		logger := &logger{baseLogger: slog.New(slog.NewJSONHandler(os.Stdout, nil))}
+		logger := &Logger{baseLogger: slog.New(slog.NewJSONHandler(os.Stdout, nil))}
 		assert.NotPanics(t, func() {
 			logger.log(context.TODO(), slog.LevelInfo, "Test message", map[string]any{"key": "value"})
 		})

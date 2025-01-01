@@ -1,4 +1,4 @@
-package pkg
+package logger
 
 import (
 	"context"
@@ -18,14 +18,14 @@ type LoggerConfig struct {
 	ContextKeys  []contextKey   //コンテキストから取得するキー一覧
 }
 
-type logger struct {
+type Logger struct {
 	baseLogger  *slog.Logger
 	contextKeys []contextKey
 	cache       sync.Map // キャッシュ
 }
 
 // グローバル変数はmain関数実行前に宣言される。
-var globalLogger *logger
+var globalLogger *Logger
 
 // sync.Onceオブジェクトに対して渡した関数は、プログラム全体で一度しか実行されない
 var once sync.Once
@@ -40,7 +40,7 @@ var defaultConfig = LoggerConfig{
 }
 
 // ロガーを初期化する関数
-func InitLogger(config *LoggerConfig) *logger {
+func InitLogger(config *LoggerConfig) *Logger {
 	// もう一度onceが実行されるとエラーになる
 	once.Do(
 		func() {
@@ -59,7 +59,7 @@ func InitLogger(config *LoggerConfig) *logger {
 				baseLogger = baseLogger.With(slog.Any(k, v))
 			}
 			// グローバル変数にあるlogger格納用変数にインスタンスを格納
-			globalLogger = &logger{
+			globalLogger = &Logger{
 				baseLogger:  baseLogger,
 				contextKeys: config.ContextKeys,
 			}
@@ -68,7 +68,7 @@ func InitLogger(config *LoggerConfig) *logger {
 	return globalLogger
 }
 
-func GetLogger() (*logger, error) {
+func GetLogger() (*Logger, error) {
 	// もし初期化されてなかったらエラー
 	if globalLogger == nil {
 		return nil, fmt.Errorf("error: no init logger. Please initialize Logger. Using InitLogger")
@@ -77,11 +77,11 @@ func GetLogger() (*logger, error) {
 }
 
 // コンテキスト情報を出力できるロガーを返す。
-func (l *logger) WithContext(ctx context.Context) *logger {
+func (l *Logger) WithContext(ctx context.Context) *Logger {
 	//  キャッシュをチェックする
 	// 同じコンテキストでのロガー呼び出しではキャッシュが使われる。
 	if cached, ok := l.cache.Load(ctx); ok {
-		return cached.(*logger)
+		return cached.(*Logger)
 	}
 
 	// contextにあるvalueを取得
@@ -93,7 +93,7 @@ func (l *logger) WithContext(ctx context.Context) *logger {
 		newLogger = newLogger.With(slog.Any(k, v))
 	}
 	// 新しいcontextで使うロガーを生成
-	cachedLogger := &logger{
+	cachedLogger := &Logger{
 		baseLogger:  newLogger,     // 新しく作ったロガーを渡す。
 		contextKeys: l.contextKeys, // 初期設定のキーバリューを渡す。
 	}
@@ -103,7 +103,7 @@ func (l *logger) WithContext(ctx context.Context) *logger {
 }
 
 // 事前定義したキーに対応する値をコンテキストから取得する
-func (l *logger) extractFieldsFromContext(ctx context.Context) map[string]any {
+func (l *Logger) extractFieldsFromContext(ctx context.Context) map[string]any {
 	fields := make(map[string]any, len(l.contextKeys))
 	for _, key := range l.contextKeys {
 		if value := ctx.Value(key); value != nil {
@@ -114,7 +114,7 @@ func (l *logger) extractFieldsFromContext(ctx context.Context) map[string]any {
 }
 
 // ログを処理
-func (l *logger) log(ctx context.Context, level slog.Level, msg string, fields map[string]any) {
+func (l *Logger) log(ctx context.Context, level slog.Level, msg string, fields map[string]any) {
 	args := make([]any, 0, len(fields)*2)
 	for k, v := range fields {
 		args = append(args, k, v)
@@ -123,18 +123,18 @@ func (l *logger) log(ctx context.Context, level slog.Level, msg string, fields m
 }
 
 // ログ出力メソッド群
-func (l *logger) Info(ctx context.Context, msg string, fields map[string]any) {
+func (l *Logger) Info(ctx context.Context, msg string, fields map[string]any) {
 	l.log(ctx, slog.LevelInfo, msg, fields)
 }
 
-func (l *logger) Warn(ctx context.Context, msg string, fields map[string]any) {
+func (l *Logger) Warn(ctx context.Context, msg string, fields map[string]any) {
 	l.log(ctx, slog.LevelWarn, msg, fields)
 }
 
-func (l *logger) Error(ctx context.Context, msg string, fields map[string]any) {
+func (l *Logger) Error(ctx context.Context, msg string, fields map[string]any) {
 	l.log(ctx, slog.LevelError, msg, fields)
 }
 
-func (l *logger) Debug(ctx context.Context, msg string, fields map[string]any) {
+func (l *Logger) Debug(ctx context.Context, msg string, fields map[string]any) {
 	l.log(ctx, slog.LevelDebug, msg, fields)
 }

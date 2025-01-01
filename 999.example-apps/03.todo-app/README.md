@@ -60,4 +60,8 @@ testの雛形を作れるツールがあるので利用する。
 
 ### 2. todoアプリのディレクトリ構造を決定する
 
-今回、ui,usecase,domain,infraに分けた。
+今回、api,usecase,domain,infraに分けた。
+
+### 3. ルーティングを自動生成
+
+今回Ogenを使用
