@@ -1,0 +1,405 @@
+openapi: 3.0.3
+info:
+  title: User and Todo Management API
+  version: 1.0.0
+tags:
+- name: Users
+  description: Operations related to user management
+- name: Todos
+  description: Operations related to todo management
+paths:
+  /users:
+    post:
+      tags:
+      - Users
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: John Doe
+                email:
+                  type: string
+                  format: email
+                  pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  example: password123
+              required:
+              - name
+              - email
+              - password
+      responses:
+        201:
+          description: User created successfully
+        400:
+          description: Invalid input
+
+  /users/{id}:
+    get:
+      tags:
+      - Users
+      summary: Get user details by ID
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        200:
+          description: User details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
+        404:
+          description: User not found
+
+    delete:
+      tags:
+      - Users
+      summary: Delete a user and all related data
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        204:
+          description: User deleted successfully
+        404:
+          description: User not found
+
+  /todos:
+    post:
+      tags:
+      - Todos
+      summary: Create a new TODO
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  example: Buy groceries
+                description:
+                  type: string
+                  maxLength: 500
+                  example: Milk, Bread, Eggs
+              required:
+              - title
+      responses:
+        201:
+          description: TODO created successfully
+        400:
+          description: Invalid input
+
+    get:
+      tags:
+      - Todos
+      summary: Get a list of all TODOs
+      responses:
+        200:
+          description: List of TODOs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    title:
+                      type: string
+                    description:
+                      type: string
+                    status:
+                      type: string
+                    priority:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+                    updated_at:
+                      type: string
+                      format: date-time
+
+  /todos/{id}:
+    get:
+      tags:
+      - Todos
+      summary: Get TODO details by ID
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        200:
+          description: TODO details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  status:
+                    type: string
+                  priority:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+        404:
+          description: TODO not found
+
+    patch:
+      tags:
+      - Todos
+      summary: Update a TODO
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                description:
+                  type: string
+                  maxLength: 500
+              additionalProperties: false
+      responses:
+        200:
+          description: TODO updated successfully
+        404:
+          description: TODO not found
+
+    delete:
+      tags:
+      - Todos
+      summary: Delete a TODO
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        204:
+          description: TODO deleted successfully
+        404:
+          description: TODO not found
+
+  /todos/{id}/complete:
+    post:
+      tags:
+      - Todos
+      summary: Mark a TODO as completed
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        200:
+          description: TODO marked as completed
+        404:
+          description: TODO not found
+
+  /todos/{id}/reopen:
+    post:
+      tags:
+      - Todos
+      summary: Reopen a completed TODO
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        200:
+          description: TODO reopened
+        404:
+          description: TODO not found
+
+  /todos/{id}/priority:
+    patch:
+      tags:
+      - Todos
+      summary: Change the priority of a TODO
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                priority:
+                  type: string
+                  enum: [ LOW, MEDIUM, HIGH ]
+                  example: HIGH
+              required:
+              - priority
+      responses:
+        200:
+          description: TODO priority updated
+        404:
+          description: TODO not found
+
+  /todos/{id}/tags:
+    post:
+      tags:
+      - Todos
+      summary: Add a tag to a TODO
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tagId:
+                  type: integer
+                  minimum: 1
+                  example: 1
+              required:
+              - tagId
+      responses:
+        200:
+          description: Tag added to TODO
+        404:
+          description: TODO or tag not found
+
+    delete:
+      tags:
+      - Todos
+      summary: Remove a tag from a TODO
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: tagId
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        204:
+          description: Tag removed from TODO
+        404:
+          description: TODO or tag not found
+
+  /todos/filter:
+    get:
+      tags:
+      - Todos
+      summary: Filter TODOs based on specific conditions
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [ UNFINISHED, COMPLETED ]
+          example: COMPLETED
+      - name: priority
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [ LOW, MEDIUM, HIGH ]
+          example: HIGH
+      responses:
+        200:
+          description: Filtered TODOs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    title:
+                      type: string
+                    description:
+                      type: string
+                    status:
+                      type: string
+                    priority:
+                      type: string
+        400:
+          description: Invalid filter conditions

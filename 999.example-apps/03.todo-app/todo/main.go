@@ -1,33 +1,46 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
-	"pkg/logger"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 	"todo/api"
-	"todo/ogen"
 )
 
 func main() {
-	logger := logger.InitLogger(nil)
+	mux := api.SetupRoutes()
 
-	server := api.APIHandler{
-		Logger: logger,
-	}
-	handler, err := ogen.NewServer(&server)
-	if err != nil {
-		log.Fatalf("failed start server: %v", err)
-	}
-
-	// HTTPサーバーの起動
-	httpServer := &http.Server{
-		Addr:    ":8080",
-		Handler: handler,
+	server := &http.Server{
+		Addr:         ":8080",
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
-	// サーバー起動
-	println("Server is running on http://localhost:8080")
-	if err := httpServer.ListenAndServe(); err != nil {
-		log.Fatalf("failed Listen And Serve: %v", err)
+	go func() {
+		fmt.Println("Starting server on :8080")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Could not listen on :8080: %v\n", err)
+		}
+	}()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	<-sigChan
+	fmt.Println("\nShutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
 	}
+	fmt.Println("Server gracefully stopped")
 }
