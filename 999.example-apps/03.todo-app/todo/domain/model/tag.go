@@ -1,6 +1,6 @@
 package model
 
-type tag struct {
+type Tag struct {
 	ID   int
 	name string
 }
