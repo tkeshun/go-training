@@ -2,7 +2,9 @@ package service
 
 import "todo/domain/model"
 
-type userService interface {
-	UserRegister(user model.User) error
-	UserDelete(userID model.UserID) error
+type UserService interface {
+	RegisterUser(user model.User) error
+	DeleteUserByID(userID model.UserID) error
+	GetAllUsers() ([]model.User, error)
+	GetUserByID() (model.User, error)
 }

@@ -1,6 +1,8 @@
 package model
 
-import "todo/domain/value"
+import (
+	"todo/domain/value"
+)
 
 type Todo struct {
 	ID          TodoID
@@ -8,6 +10,7 @@ type Todo struct {
 	Description string
 	Status      value.TodoStatus
 	Priority    value.TodoPriority
+	tags        []Tag
 }
 
 type TodoID int64
