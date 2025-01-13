@@ -16,4 +16,6 @@ func (r *Role) validate() error {
 	if !r.IsARole() {
 		return ERROR_VALIDATE_ROLE
 	}
+
+	return nil
 }

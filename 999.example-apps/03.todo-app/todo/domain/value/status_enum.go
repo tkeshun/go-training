@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _TodoStatusName = "UNFINISHEDCOMPLETED"
+const _TodoStatusName = "UNFINISHEDCOMPLETEDUNDEFINED"
 
-var _TodoStatusIndex = [...]uint8{0, 10, 19}
+var _TodoStatusIndex = [...]uint8{0, 10, 19, 28}
 
-const _TodoStatusLowerName = "unfinishedcompleted"
+const _TodoStatusLowerName = "unfinishedcompletedundefined"
 
 func (i TodoStatus) String() string {
 	if i < 0 || i >= TodoStatus(len(_TodoStatusIndex)-1) {
@@ -27,20 +27,24 @@ func _TodoStatusNoOp() {
 	var x [1]struct{}
 	_ = x[UNFINISHED-(0)]
 	_ = x[COMPLETED-(1)]
+	_ = x[UNDEFINED-(2)]
 }
 
-var _TodoStatusValues = []TodoStatus{UNFINISHED, COMPLETED}
+var _TodoStatusValues = []TodoStatus{UNFINISHED, COMPLETED, UNDEFINED}
 
 var _TodoStatusNameToValueMap = map[string]TodoStatus{
 	_TodoStatusName[0:10]:       UNFINISHED,
 	_TodoStatusLowerName[0:10]:  UNFINISHED,
 	_TodoStatusName[10:19]:      COMPLETED,
 	_TodoStatusLowerName[10:19]: COMPLETED,
+	_TodoStatusName[19:28]:      UNDEFINED,
+	_TodoStatusLowerName[19:28]: UNDEFINED,
 }
 
 var _TodoStatusNames = []string{
 	_TodoStatusName[0:10],
 	_TodoStatusName[10:19],
+	_TodoStatusName[19:28],
 }
 
 // TodoStatusString retrieves an enum value from the enum constants string name.

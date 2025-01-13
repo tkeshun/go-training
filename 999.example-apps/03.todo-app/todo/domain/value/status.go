@@ -6,4 +6,5 @@ type TodoStatus int
 const (
 	UNFINISHED TodoStatus = iota
 	COMPLETED
+	UNDEFINED
 )

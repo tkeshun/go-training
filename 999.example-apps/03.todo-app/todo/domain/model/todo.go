@@ -1,6 +1,7 @@
 package model
 
 import (
+	"time"
 	"todo/domain/value"
 )
 
@@ -11,6 +12,8 @@ type Todo struct {
 	Status      value.TodoStatus
 	Priority    value.TodoPriority
 	tags        []Tag
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type TodoID int64
