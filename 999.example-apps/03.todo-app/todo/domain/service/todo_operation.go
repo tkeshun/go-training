@@ -1,18 +1,19 @@
 package service
 
 import (
+	"context"
 	"todo/domain/model"
 	"todo/domain/value"
 )
 
 type TodoService interface {
-	TodosCreate(todos []model.Todo) error
-	TodoGetAll() ([]model.Todo, error)                       // viewにかえるかも
-	TodoGetByUser(userID model.UserID) ([]model.Todo, error) // viewに変えるかも
-	TodoComplete(todoID model.TodoID) error
-	TodoReopen(todoID model.TodoID) error
-	TodoPriorityChange(todoID model.TodoID, priority value.TodoPriority) error
-	TagAddToTodo(todoID model.TodoID, tag model.Tag) error
-	TagRemoveFromTodo(todoID model.TodoID, tag model.Tag) error
-	TodoFilter(priority value.TodoPriority, status value.TodoStatus) ([]model.Todo, error)
+	TodosCreate(ctx context.Context, todos []model.Todo) error
+	TodoGetAll(ctx context.Context) ([]model.Todo, error)                         // viewにかえるかも
+	TodoGetByUser(ctx context.Context, userID model.UserID) ([]model.Todo, error) // viewに変えるかも
+	TodoComplete(ctx context.Context, todoID model.TodoID) error
+	TodoReopen(ctx context.Context, todoID model.TodoID) error
+	TodoPriorityChange(ctx context.Context, todoID model.TodoID, priority value.TodoPriority) error
+	TagAddToTodo(ctx context.Context, todoID model.TodoID, tag model.Tag) error
+	TagRemoveFromTodo(ctx context.Context, todoID model.TodoID, tag model.Tag) error
+	TodoFilter(ctx context.Context, priority value.TodoPriority, status value.TodoStatus) ([]model.Todo, error)
 }

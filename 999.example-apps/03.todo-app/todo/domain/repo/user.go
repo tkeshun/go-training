@@ -1,10 +1,13 @@
 package repo
 
-import "todo/domain/model"
+import (
+	"context"
+	"todo/domain/model"
+)
 
 type UserRepo interface {
-	Create(user model.User) error
-	GetAll() ([]model.User, error)
-	GetByID(userID model.UserID) (model.User, error)
-	DeleteByID(userID model.UserID) error
+	Create(ctx context.Context, user model.User) error
+	GetAll(ctx context.Context) ([]model.User, error)
+	GetByID(ctx context.Context, userID model.UserID) (model.User, error)
+	DeleteByID(ctx context.Context, userID model.UserID) error
 }

@@ -7,13 +7,39 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"pkg/logger"
 	"syscall"
 	"time"
 	"todo/api"
+	"todo/infra"
+	"todo/usecase"
 )
 
+var Logger *logger.Logger
+
 func main() {
-	mux := api.SetupRoutes()
+	ctx := context.Background()
+	Logger = logger.InitLogger(&logger.LoggerConfig{})
+	pool, err := infra.NewDBConnection()
+	if err != nil {
+		Logger.Error(ctx, err.Error(), map[string]any{})
+		log.Fatal()
+	}
+
+	todoUsecase := usecase.NewTodoService(
+		infra.NewTodoRepo(),
+		infra.NewPgxTransactionManager(pool),
+	)
+	userUsecase := usecase.NewUserService(
+		infra.NewUserRepo(pool),
+	)
+
+	handler := api.NewHandler(
+		todoUsecase,
+		userUsecase,
+	)
+
+	mux := api.SetupRoutes(handler)
 
 	server := &http.Server{
 		Addr:         ":8080",

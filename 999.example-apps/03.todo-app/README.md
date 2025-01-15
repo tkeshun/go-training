@@ -12,7 +12,6 @@
     - infoやwarnも使ってみて
 
 - pkg/loggerは別パッケージにすること
-- apiにベアラートークンで認証をかけること
 - DBアクセスをすること
 
 
@@ -58,10 +57,7 @@ testの雛形を作れるツールがあるので利用する。
 [Testify](https://github.com/stretchr/testify)を使ってUnitテストを書いていく。  
 `go get github.com/stretchr/testify`でインストール。  
 
-### 2. todoアプリのディレクトリ構造を決定する
+### 2. todoアプリのディレクトリ構造を決めて実装
 
 今回、api,usecase,domain,infraに分けた。
 
-### 3. ルーティングを自動生成
-
-今回Ogenを使用
